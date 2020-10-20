@@ -88,12 +88,12 @@ Output:
 
 ```go
 type MyError struct {
-	Base rterror.RuntimeError
+	rterror.RuntimeError
 }
 
 func New(message string, arguments ...interface{}) *MyError {
 	return &MyError{
-		Base: *rterror.NewSkipCaller(1, message, arguments...),
+		RuntimeError: *rterror.NewSkipCaller(1, message, arguments...),
 	}
 }
 
