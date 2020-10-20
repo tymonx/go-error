@@ -17,13 +17,14 @@ package rterror
 import (
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"gitlab.com/tymonx/go-formatter/formatter"
 )
 
 // These constants define default values for runtime error.
 const (
-	DefaultFormat = "{.BaseFile}:{.Line}:{.BaseFunction}(): {.Message}"
+	DefaultFormat = "{.File | .Base}:{.Line}:{.Package | .Base}.{.Function}(): {.Message}"
 )
 
 // RuntimeError defines a runtime error with message string formatted using
@@ -32,11 +33,8 @@ const (
 // from where a runtime error was called.
 type RuntimeError struct {
 	pc        uintptr
-	line      int
-	file      string
 	format    string
 	message   string
-	function  string
 	formatter *formatter.Formatter
 	arguments []interface{}
 }
@@ -54,15 +52,12 @@ func New(message string, arguments ...interface{}) *RuntimeError {
 // The argument skip is the number of stack frames to ascend,
 // with 0 identifying the caller of NewSkipCaller.
 func NewSkipCaller(skip int, message string, arguments ...interface{}) *RuntimeError {
-	pc, file, line, _ := runtime.Caller(skip + 1)
+	pc, _, _, _ := runtime.Caller(skip + 1) // nolint: dogsled
 
 	return &RuntimeError{
 		pc:        pc,
-		line:      line,
-		file:      file,
 		format:    DefaultFormat,
 		message:   message,
-		function:  runtime.FuncForPC(pc).Name(),
 		formatter: formatter.New(),
 		arguments: arguments,
 	}
@@ -70,27 +65,30 @@ func NewSkipCaller(skip int, message string, arguments ...interface{}) *RuntimeE
 
 // Line returns line number.
 func (r *RuntimeError) Line() int {
-	return r.line
+	_, line := runtime.FuncForPC(r.pc).FileLine(r.pc)
+	return line
 }
 
-// File returns file path.
+// File returns full file path.
 func (r *RuntimeError) File() string {
-	return r.file
-}
-
-// BaseFile returns base file path.
-func (r *RuntimeError) BaseFile() string {
-	return filepath.Base(r.file)
+	file, _ := runtime.FuncForPC(r.pc).FileLine(r.pc)
+	return file
 }
 
 // Function returns function name.
 func (r *RuntimeError) Function() string {
-	return r.function
+	return filepath.Ext(runtime.FuncForPC(r.pc).Name())[1:]
 }
 
-// BaseFunction returns base function name.
-func (r *RuntimeError) BaseFunction() string {
-	return filepath.Base(r.function)
+// Package returns full package path.
+func (r *RuntimeError) Package() string {
+	name := runtime.FuncForPC(r.pc).Name()
+	return strings.TrimSuffix(name, filepath.Ext(name))
+}
+
+// Base returns base name. Used in message format string.
+func (*RuntimeError) Base(name string) string {
+	return filepath.Base(name)
 }
 
 // ProgramCounter returns program counter.

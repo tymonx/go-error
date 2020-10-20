@@ -39,7 +39,7 @@ func ExampleRuntimeError_withArguments() {
 }
 
 func ExampleRuntimeError_setFormat() {
-	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.BaseFunction}: '{.Message}'")
+	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.Package | .Base}.{.Function}: '{.Message}'")
 
 	fmt.Println(err)
 	// Output: #rterror_test.ExampleRuntimeError_setFormat: 'Error message bar - 5'
@@ -85,16 +85,12 @@ func TestRuntimeFile(test *testing.T) {
 	assert.Contains(test, rterror.New("Error message").File(), "go-error/rterror/runtime_error_test.go")
 }
 
-func TestRuntimeBaseFile(test *testing.T) {
-	assert.Equal(test, "runtime_error_test.go", rterror.New("Error message").BaseFile())
-}
-
 func TestRuntimeFunction(test *testing.T) {
-	assert.Contains(test, rterror.New("Error message").Function(), "go-error/rterror_test.TestRuntimeFunction")
+	assert.Equal(test, "TestRuntimeFunction", rterror.New("Error message").Function())
 }
 
-func TestRuntimeBaseFunction(test *testing.T) {
-	assert.Equal(test, "rterror_test.TestRuntimeBaseFunction", rterror.New("Error message").BaseFunction())
+func TestRuntimePackage(test *testing.T) {
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test", rterror.New("Error message").Package())
 }
 
 func TestRuntimeArguments(test *testing.T) {

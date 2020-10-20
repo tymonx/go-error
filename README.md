@@ -2,7 +2,7 @@
 
 The Go Error library implements runtime error with message string formatted
 using **replacement fields** surrounded by curly braces `{}` format strings from
-the Go Formatter library.
+the [Go Formatter](https://gitlab.com/tymonx/go-formatter) library.
 
 [[_TOC_]]
 
@@ -13,7 +13,7 @@ the Go Formatter library.
 *   Format string using positional placeholders `{pN}`
 *   Format string using named placeholders `{name}`
 *   Format string using object placeholders `{.Field}`
-*   Set custom format error message string. Default is `{.BaseFile}:{.Line}:{.BaseFunction}(): {.Message}`
+*   Set custom format error message string. Default is `{.File | .Base}:{.Line}:{.Package | .Base}.{.Function}(): {.Message}`
 *   Error message contains file path, line number, function name from where was called
 *   Compatible with the standard `errors` package with `As`, `Is` and `Unwrap` functions
 *   Configure `formatter` from the [Go Formatter](https://gitlab.com/tymonx/go-formatter) library
@@ -73,7 +73,7 @@ true
 ### Custom format
 
 ```go
-err := rterror.New("Error message {p1} -", 3, "bar").SetFormat("#{.BaseFunction} := '{.Message}' <-")
+err := rterror.New("Error message {p1} -", 3, "bar").SetFormat("#{.Function} := '{.Message}' <-")
 
 fmt.Println(err)
 ```
@@ -81,7 +81,7 @@ fmt.Println(err)
 Output:
 
 ```plaintext
-#<package>.<function> := 'Error message bar - 3' <-
+#<function> := 'Error message bar - 3' <-
 ```
 
 ### Custom error type
