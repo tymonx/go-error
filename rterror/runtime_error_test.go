@@ -15,6 +15,8 @@
 package rterror_test
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,12 +24,53 @@ import (
 	"gitlab.com/tymonx/go-formatter/formatter"
 )
 
+func ExampleRuntimeError_withoutArguments() {
+	err := rterror.New("Error message")
+
+	fmt.Println(err)
+	// Output: runtime_error_test.go:28:rterror_test.ExampleRuntimeError_withoutArguments(): Error message
+}
+
+func ExampleRuntimeError_withArguments() {
+	err := rterror.New("Error message {p1} - {p0}", 3, "foo")
+
+	fmt.Println(err)
+	// Output: runtime_error_test.go:35:rterror_test.ExampleRuntimeError_withArguments(): Error message foo - 3
+}
+
+func ExampleRuntimeError_setFormat() {
+	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.BaseFunction}: '{.Message}'")
+
+	fmt.Println(err)
+	// Output: #rterror_test.ExampleRuntimeError_setFormat: 'Error message bar - 5'
+}
+
+func ExampleRuntimeError_unwrap() {
+	wrapped := rterror.New("wrapped error")
+
+	err := rterror.New("Error message", 5, wrapped)
+
+	fmt.Println(errors.Is(err, wrapped))
+	// Output: true
+}
+
+func ExampleNewSkipCaller() {
+	MyNewError := func(message string, arguments ...interface{}) *rterror.RuntimeError {
+		return rterror.NewSkipCaller(1, message, arguments...)
+	}
+
+	err := MyNewError("Error message {p1}", "caller", "skip")
+
+	fmt.Println(err)
+	// Output: runtime_error_test.go:62:rterror_test.ExampleNewSkipCaller(): Error message skip caller
+}
+
 func TestRuntimeError(test *testing.T) {
 	err := rterror.New("Error message", 5)
 
 	assert.NotNil(test, err)
 	assert.Error(test, err)
-	assert.Equal(test, "runtime_error_test.go:26:rterror_test.TestRuntimeError(): Error message 5", err.Error())
+	assert.Equal(test, "runtime_error_test.go:69:rterror_test.TestRuntimeError(): Error message 5", err.Error())
 }
 
 func TestRuntimeLine(test *testing.T) {
