@@ -15,16 +15,14 @@
 package rterror
 
 import (
-	"path/filepath"
 	"runtime"
-	"strings"
 
 	"gitlab.com/tymonx/go-formatter/formatter"
 )
 
 // These constants define default values for runtime error.
 const (
-	DefaultFormat = "{.File | .Base}:{.Line}:{.Package | .Base}.{.Function}(): {.Message}"
+	DefaultFormat = "{.File | base}:{.Line}:{.Package | base}.{.Function}(): {.Message}"
 )
 
 // RuntimeError defines a runtime error with message string formatted using
@@ -32,11 +30,7 @@ const (
 // the Go Formatter library. It contains line number, file path and function name
 // from where a runtime error was called.
 type RuntimeError struct {
-	pc        uintptr
-	format    string
-	message   string
-	formatter *formatter.Formatter
-	arguments []interface{}
+	base base
 }
 
 // New creates a new runtime error object with message string formatted using
@@ -55,107 +49,87 @@ func NewSkipCaller(skip int, message string, arguments ...interface{}) *RuntimeE
 	pc, _, _, _ := runtime.Caller(skip + 1) // nolint: dogsled
 
 	return &RuntimeError{
-		pc:        pc,
-		format:    DefaultFormat,
-		message:   message,
-		formatter: formatter.New(),
-		arguments: arguments,
+		base: base{
+			pc:        pc,
+			format:    DefaultFormat,
+			message:   message,
+			formatter: formatter.New(),
+			arguments: arguments,
+		},
 	}
 }
 
 // Line returns line number.
 func (r *RuntimeError) Line() int {
-	_, line := runtime.FuncForPC(r.pc).FileLine(r.pc)
-	return line
+	return r.base.Line()
 }
 
 // File returns full file path.
 func (r *RuntimeError) File() string {
-	file, _ := runtime.FuncForPC(r.pc).FileLine(r.pc)
-	return file
+	return r.base.File()
 }
 
 // Function returns function name.
 func (r *RuntimeError) Function() string {
-	return filepath.Ext(runtime.FuncForPC(r.pc).Name())[1:]
+	return r.base.Function()
 }
 
 // Package returns full package path.
 func (r *RuntimeError) Package() string {
-	name := runtime.FuncForPC(r.pc).Name()
-	return strings.TrimSuffix(name, filepath.Ext(name))
-}
-
-// Base returns base name. Used in message format string.
-func (*RuntimeError) Base(name string) string {
-	return filepath.Base(name)
+	return r.base.Package()
 }
 
 // ProgramCounter returns program counter.
 func (r *RuntimeError) ProgramCounter() uintptr {
-	return r.pc
+	return r.base.ProgramCounter()
 }
 
 // Arguments returns arguments.
 func (r *RuntimeError) Arguments() []interface{} {
-	return r.arguments
+	return r.base.Arguments()
 }
 
 // SetFormat sets error message format string for formatter.
 func (r *RuntimeError) SetFormat(format string) *RuntimeError {
-	r.format = format
+	r.base.format = format
 	return r
 }
 
 // GetFormat returns error message format string for formatter.
 func (r *RuntimeError) GetFormat() string {
-	return r.format
+	return r.base.format
 }
 
 // ResetFormat resets error message format string for formatter to default value.
 func (r *RuntimeError) ResetFormat() *RuntimeError {
-	r.format = DefaultFormat
+	r.base.format = DefaultFormat
 	return r
 }
 
 // SetFormatter sets formatter.
 func (r *RuntimeError) SetFormatter(f *formatter.Formatter) *RuntimeError {
-	r.formatter = f
+	r.base.formatter = f
 	return r
 }
 
 // GetFormatter returns formatter.
 func (r *RuntimeError) GetFormatter() *formatter.Formatter {
-	return r.formatter
+	return r.base.formatter
 }
 
 // Message returns formatted error message string.
 func (r *RuntimeError) Message() string {
-	formatted, err := r.formatter.Format(r.message, r.arguments...)
-
-	if err != nil {
-		// Failback
-		formatted = r.message
-	}
-
-	return formatted
+	return r.base.Message()
 }
 
 // Error returns formatted error message string.
 func (r *RuntimeError) Error() string {
-	formatted, err := formatter.Format(r.format, r)
-
-	if err != nil {
-		// Failback
-		formatted = r.message
-	}
-
-	return formatted
+	return r.base.formatMessage()
 }
 
 // Unwrap returns wrapped error.
 func (r *RuntimeError) Unwrap() error {
-	for _, argument := range r.arguments {
+	for _, argument := range r.base.arguments {
 		if err, ok := argument.(error); ok {
 			return err
 		}
