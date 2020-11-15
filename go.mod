@@ -18,5 +18,5 @@ go 1.14
 
 require (
 	github.com/stretchr/testify v1.6.1
-	gitlab.com/tymonx/go-formatter v1.3.0
+	gitlab.com/tymonx/go-formatter v1.4.0
 )
