@@ -15,7 +15,9 @@
 package rterror
 
 import (
+	"path/filepath"
 	"runtime"
+	"strings"
 
 	"gitlab.com/tymonx/go-formatter/formatter"
 )
@@ -30,7 +32,11 @@ const (
 // the Go Formatter library. It contains line number, file path and function name
 // from where a runtime error was called.
 type RuntimeError struct {
-	base base
+	pc        uintptr
+	format    string
+	message   string
+	formatter *formatter.Formatter
+	arguments []interface{}
 }
 
 // New creates a new runtime error object with message string formatted using
@@ -49,87 +55,102 @@ func NewSkipCaller(skip int, message string, arguments ...interface{}) *RuntimeE
 	pc, _, _, _ := runtime.Caller(skip + 1) // nolint: dogsled
 
 	return &RuntimeError{
-		base: base{
-			pc:        pc,
-			format:    DefaultFormat,
-			message:   message,
-			formatter: formatter.New(),
-			arguments: arguments,
-		},
+		pc:        pc,
+		format:    DefaultFormat,
+		message:   message,
+		formatter: formatter.New(),
+		arguments: arguments,
 	}
 }
 
 // Line returns line number.
 func (r *RuntimeError) Line() int {
-	return r.base.Line()
+	_, line := runtime.FuncForPC(r.pc).FileLine(r.pc)
+	return line
 }
 
 // File returns full file path.
 func (r *RuntimeError) File() string {
-	return r.base.File()
+	file, _ := runtime.FuncForPC(r.pc).FileLine(r.pc)
+	return file
 }
 
 // Function returns function name.
 func (r *RuntimeError) Function() string {
-	return r.base.Function()
+	return filepath.Ext(runtime.FuncForPC(r.pc).Name())[1:]
 }
 
 // Package returns full package path.
 func (r *RuntimeError) Package() string {
-	return r.base.Package()
+	name := runtime.FuncForPC(r.pc).Name()
+	return strings.TrimSuffix(name, filepath.Ext(name))
 }
 
 // ProgramCounter returns program counter.
 func (r *RuntimeError) ProgramCounter() uintptr {
-	return r.base.ProgramCounter()
+	return r.pc
 }
 
 // Arguments returns arguments.
 func (r *RuntimeError) Arguments() []interface{} {
-	return r.base.Arguments()
+	return r.arguments
 }
 
 // SetFormat sets error message format string for formatter.
 func (r *RuntimeError) SetFormat(format string) *RuntimeError {
-	r.base.format = format
+	r.format = format
 	return r
 }
 
 // GetFormat returns error message format string for formatter.
 func (r *RuntimeError) GetFormat() string {
-	return r.base.format
+	return r.format
 }
 
 // ResetFormat resets error message format string for formatter to default value.
 func (r *RuntimeError) ResetFormat() *RuntimeError {
-	r.base.format = DefaultFormat
+	r.format = DefaultFormat
 	return r
 }
 
 // SetFormatter sets formatter.
 func (r *RuntimeError) SetFormatter(f *formatter.Formatter) *RuntimeError {
-	r.base.formatter = f
+	r.formatter = f
 	return r
 }
 
 // GetFormatter returns formatter.
 func (r *RuntimeError) GetFormatter() *formatter.Formatter {
-	return r.base.formatter
+	return r.formatter
 }
 
 // Message returns formatted error message string.
 func (r *RuntimeError) Message() string {
-	return r.base.Message()
+	formatted, err := r.formatter.Format(r.message, r.arguments...)
+
+	if err != nil {
+		// Failback
+		formatted = r.message
+	}
+
+	return formatted
 }
 
 // Error returns formatted error message string.
 func (r *RuntimeError) Error() string {
-	return r.base.formatMessage()
+	formatted, err := formatter.Format(r.format, r)
+
+	if err != nil {
+		// Failback
+		formatted = r.message
+	}
+
+	return formatted
 }
 
 // Unwrap returns wrapped error.
 func (r *RuntimeError) Unwrap() error {
-	for _, argument := range r.base.arguments {
+	for _, argument := range r.arguments {
 		if err, ok := argument.(error); ok {
 			return err
 		}
