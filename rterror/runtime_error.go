@@ -22,10 +22,9 @@ import (
 	"gitlab.com/tymonx/go-formatter/formatter"
 )
 
-// These constants define default values for runtime error.
-const (
-	DefaultFormat = "{.File | base}:{.Line}:{.Package | base}.{.Function}(): {.Message}"
-)
+// DefaultFormat defines default error message format.
+var DefaultFormat = `{bold}{cyan}{.File | base}{reset}:{bold}{magenta}{.Line}{reset}:` + // nolint: gochecknoglobals
+	`{bold}{.Function}(){reset}: {.Message}`
 
 // RuntimeError defines a runtime error with message string formatted using
 // "replacement fields" surrounded by curly braces {} format strings from

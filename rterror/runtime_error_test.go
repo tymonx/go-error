@@ -28,14 +28,14 @@ func ExampleRuntimeError_withoutArguments() {
 	err := rterror.New("Error message")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:28:rterror_test.ExampleRuntimeError_withoutArguments(): Error message
+	// Output: runtime_error_test.go:28:ExampleRuntimeError_withoutArguments(): Error message
 }
 
 func ExampleRuntimeError_withArguments() {
 	err := rterror.New("Error message {p1} - {p0}", 3, "foo")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:35:rterror_test.ExampleRuntimeError_withArguments(): Error message foo - 3
+	// Output: runtime_error_test.go:35:ExampleRuntimeError_withArguments(): Error message foo - 3
 }
 
 func ExampleRuntimeError_setFormat() {
@@ -54,7 +54,7 @@ func ExampleRuntimeError_unwrap() {
 	fmt.Println(err)
 	// Output:
 	// true
-	// runtime_error_test.go:51:rterror_test.ExampleRuntimeError_unwrap(): Error message 5 wrapped error
+	// runtime_error_test.go:51:ExampleRuntimeError_unwrap(): Error message 5 wrapped error
 }
 
 func ExampleNewSkipCaller() {
@@ -65,7 +65,7 @@ func ExampleNewSkipCaller() {
 	err := MyNewError("Error message {p1}", "caller", "skip")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:65:rterror_test.ExampleNewSkipCaller(): Error message skip caller
+	// Output: runtime_error_test.go:65:ExampleNewSkipCaller(): Error message skip caller
 }
 
 func TestRuntimeError(test *testing.T) {
@@ -73,7 +73,7 @@ func TestRuntimeError(test *testing.T) {
 
 	assert.NotNil(test, err)
 	assert.Error(test, err)
-	assert.Equal(test, "runtime_error_test.go:72:rterror_test.TestRuntimeError(): Error message 5", err.Error())
+	assert.Equal(test, "runtime_error_test.go:72:TestRuntimeError(): Error message 5", err.Error())
 }
 
 func TestRuntimeLine(test *testing.T) {
