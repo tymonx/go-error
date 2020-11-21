@@ -24,7 +24,7 @@ import (
 
 // DefaultFormat defines default error message format.
 var DefaultFormat = `{bold}{cyan}{.File | base}{reset}:{bold}{magenta}{.Line}{reset}:` + // nolint: gochecknoglobals
-	`{bold}{.Function}(){reset}: {.Message}`
+	`{bold}{blue | bright}{.Function}(){reset}: {.Message}`
 
 // RuntimeError defines a runtime error with message string formatted using
 // "replacement fields" surrounded by curly braces {} format strings from
