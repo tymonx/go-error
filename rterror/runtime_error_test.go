@@ -80,10 +80,6 @@ func TestRuntimeLine(test *testing.T) {
 	assert.NotZero(test, rterror.New("Error message").Line())
 }
 
-func TestRuntimeProgramCounter(test *testing.T) {
-	assert.NotZero(test, rterror.New("Error message").ProgramCounter())
-}
-
 func TestRuntimeFile(test *testing.T) {
 	assert.Contains(test, rterror.New("Error message").File(), "go-error/rterror/runtime_error_test.go")
 }

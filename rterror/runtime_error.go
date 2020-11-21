@@ -22,6 +22,11 @@ import (
 	"gitlab.com/tymonx/go-formatter/formatter"
 )
 
+// These constants define default values for runtime error.
+const (
+	SkipCall = 1
+)
+
 // DefaultFormat defines default error message format.
 var DefaultFormat = `{bold}{cyan}{.File | base}{reset}:{bold}{magenta}{.Line}{reset}:` + // nolint: gochecknoglobals
 	`{bold}{blue | bright}{.Function}(){reset}: {.Message}`
@@ -31,7 +36,9 @@ var DefaultFormat = `{bold}{cyan}{.File | base}{reset}:{bold}{magenta}{.Line}{re
 // the Go Formatter library. It contains line number, file path and function name
 // from where a runtime error was called.
 type RuntimeError struct {
-	pc        uintptr
+	line      int
+	file      string
+	function  string
 	format    string
 	message   string
 	formatter *formatter.Formatter
@@ -42,7 +49,7 @@ type RuntimeError struct {
 // "replacement fields" surrounded by curly braces {} format strings, line number,
 // file path and function name from where the New() function was called.
 func New(message string, arguments ...interface{}) *RuntimeError {
-	return NewSkipCaller(1, message, arguments...)
+	return NewSkipCaller(SkipCall, message, arguments...)
 }
 
 // NewSkipCaller creates a new runtime error object with message string formatted using
@@ -51,43 +58,39 @@ func New(message string, arguments ...interface{}) *RuntimeError {
 // The argument skip is the number of stack frames to ascend,
 // with 0 identifying the caller of NewSkipCaller.
 func NewSkipCaller(skip int, message string, arguments ...interface{}) *RuntimeError {
-	pc, _, _, _ := runtime.Caller(skip + 1) // nolint: dogsled
-
-	return &RuntimeError{
-		pc:        pc,
+	r := &RuntimeError{
 		format:    DefaultFormat,
 		message:   message,
 		formatter: formatter.New(),
 		arguments: arguments,
 	}
+
+	var pc uintptr
+
+	pc, r.file, r.line, _ = runtime.Caller(skip + SkipCall)
+	r.function = runtime.FuncForPC(pc).Name()
+
+	return r
 }
 
 // Line returns line number.
 func (r *RuntimeError) Line() int {
-	_, line := runtime.FuncForPC(r.pc).FileLine(r.pc)
-	return line
+	return r.line
 }
 
 // File returns full file path.
 func (r *RuntimeError) File() string {
-	file, _ := runtime.FuncForPC(r.pc).FileLine(r.pc)
-	return file
+	return r.file
 }
 
 // Function returns function name.
 func (r *RuntimeError) Function() string {
-	return filepath.Ext(runtime.FuncForPC(r.pc).Name())[1:]
+	return filepath.Ext(r.function)[1:]
 }
 
 // Package returns full package path.
 func (r *RuntimeError) Package() string {
-	name := runtime.FuncForPC(r.pc).Name()
-	return strings.TrimSuffix(name, filepath.Ext(name))
-}
-
-// ProgramCounter returns program counter.
-func (r *RuntimeError) ProgramCounter() uintptr {
-	return r.pc
+	return strings.TrimSuffix(r.function, filepath.Ext(r.function))
 }
 
 // Arguments returns arguments.
