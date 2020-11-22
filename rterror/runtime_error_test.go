@@ -15,6 +15,7 @@
 package rterror_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
@@ -28,18 +29,18 @@ func ExampleRuntimeError_withoutArguments() {
 	err := rterror.New("Error message")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:28:ExampleRuntimeError_withoutArguments(): Error message
+	// Output: runtime_error_test.go:29:ExampleRuntimeError_withoutArguments(): Error message
 }
 
 func ExampleRuntimeError_withArguments() {
 	err := rterror.New("Error message {p1} - {p0}", 3, "foo")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:35:ExampleRuntimeError_withArguments(): Error message foo - 3
+	// Output: runtime_error_test.go:36:ExampleRuntimeError_withArguments(): Error message foo - 3
 }
 
 func ExampleRuntimeError_setFormat() {
-	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.Package | base}.{.FunctionBase}: '{.Message}'")
+	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.Package | base}.{.FunctionBase}: '{.String}'")
 
 	fmt.Println(err)
 	// Output: #rterror_test.ExampleRuntimeError_setFormat: 'Error message bar - 5'
@@ -54,7 +55,7 @@ func ExampleRuntimeError_unwrap() {
 	fmt.Println(err)
 	// Output:
 	// true
-	// runtime_error_test.go:51:ExampleRuntimeError_unwrap(): Error message 5 wrapped error
+	// runtime_error_test.go:52:ExampleRuntimeError_unwrap(): Error message 5 wrapped error
 }
 
 func ExampleNewSkipCaller() {
@@ -65,7 +66,7 @@ func ExampleNewSkipCaller() {
 	err := MyNewError("Error message {p1}", "caller", "skip")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:65:ExampleNewSkipCaller(): Error message skip caller
+	// Output: runtime_error_test.go:66:ExampleNewSkipCaller(): Error message skip caller
 }
 
 func TestRuntimeError(test *testing.T) {
@@ -73,19 +74,19 @@ func TestRuntimeError(test *testing.T) {
 
 	assert.NotNil(test, err)
 	assert.Error(test, err)
-	assert.Equal(test, "runtime_error_test.go:72:TestRuntimeError(): Error message 5", err.Error())
+	assert.Equal(test, "runtime_error_test.go:73:TestRuntimeError(): Error message 5", err.Error())
 }
 
 func TestRuntimeLine(test *testing.T) {
-	assert.NotZero(test, rterror.New("Error message").Line())
+	assert.NotZero(test, rterror.New("Error message").Line)
 }
 
 func TestRuntimeFile(test *testing.T) {
-	assert.Contains(test, rterror.New("Error message").File(), "go-error/rterror/runtime_error_test.go")
+	assert.Contains(test, rterror.New("Error message").File, "go-error/rterror/runtime_error_test.go")
 }
 
 func TestRuntimeFunction(test *testing.T) {
-	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.TestRuntimeFunction", rterror.New("Error message").Function())
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.TestRuntimeFunction", rterror.New("Error message").Function)
 }
 
 func TestRuntimeFunctionBase(test *testing.T) {
@@ -99,7 +100,7 @@ func TestRuntimePackage(test *testing.T) {
 func TestRuntimeArguments(test *testing.T) {
 	want := []interface{}{"5", 3, true, nil, 4.5}
 
-	assert.Equal(test, want, rterror.New("Error message", want...).Arguments())
+	assert.Equal(test, want, rterror.New("Error message", want...).Arguments)
 }
 
 func TestRuntimeSetFormat(test *testing.T) {
@@ -134,7 +135,7 @@ func TestRuntimeUnwrapNil(test *testing.T) {
 func TestRuntimeMessageFailback(test *testing.T) {
 	want := "Error message {invalid}"
 
-	assert.Equal(test, want, rterror.New(want, 3, "foo").Message())
+	assert.Equal(test, want, rterror.New(want, 3, "foo").String())
 }
 
 func TestRuntimeErrorFailback(test *testing.T) {
@@ -146,5 +147,24 @@ func TestRuntimeErrorFailback(test *testing.T) {
 func TestRuntimeArgumets(test *testing.T) {
 	err := rterror.New("error", 3, "test", 0.3, true)
 
-	assert.Len(test, err.Arguments(), 4)
+	assert.Len(test, err.Arguments, 4)
+}
+
+func TestRuntimeMarshalJSON(test *testing.T) {
+	e := rterror.New("error", 4, nil)
+
+	data, err := json.Marshal(e)
+
+	assert.NoError(test, err)
+	assert.NotEmpty(test, data)
+}
+
+func TestRuntimeUnmarshalJSON(test *testing.T) {
+	e := rterror.New("test", 4, nil, 3)
+
+	assert.NoError(test, json.Unmarshal([]byte(`{"file": "main.go", "line": 3, "message": "error"}`), e))
+	assert.Equal(test, "main.go", e.File)
+	assert.Equal(test, 3, e.Line)
+	assert.Equal(test, "error", e.Message)
+	assert.Equal(test, "error 4 <nil> 3", e.String())
 }

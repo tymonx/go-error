@@ -13,7 +13,7 @@ the [Go Formatter](https://gitlab.com/tymonx/go-formatter) library.
 *   Format string using positional placeholders `{pN}`
 *   Format string using named placeholders `{name}`
 *   Format string using object placeholders `{.Field}`, `{p.Field}` and `{pN.Field}` where `Field` is an exported `struct` field or method
-*   Set custom format error message string. Default is `{.File | base}:{.Line}:{.Function}(): {.Message}`
+*   Set custom format error message string. Default is `{.FileBase}:{.Line}:{.FunctionBase}(): {.String}`
 *   Error message contains file path, line number, function name from where was called
 *   Compatible with the standard `errors` package with `As`, `Is` and `Unwrap` functions
 *   It uses the [Go Formatter](https://gitlab.com/tymonx/go-formatter) library
@@ -73,7 +73,7 @@ true
 ### Custom format
 
 ```go
-err := rterror.New("Error message {p1} -", 3, "bar").SetFormat("#{.Function} := '{.Message}' <-")
+err := rterror.New("Error message {p1} -", 3, "bar").SetFormat("#{.Function} := '{.String}' <-")
 
 fmt.Println(err)
 ```
