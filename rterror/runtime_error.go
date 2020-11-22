@@ -95,7 +95,7 @@ func (r *RuntimeError) Function() string {
 
 // FunctionBase returns function base name.
 func (r *RuntimeError) FunctionBase() string {
-	return filepath.Ext(r.function)[1:]
+	return strings.TrimPrefix(filepath.Ext(r.function), ".")
 }
 
 // Package returns full package path.
