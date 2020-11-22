@@ -28,8 +28,8 @@ const (
 )
 
 // DefaultFormat defines default error message format.
-var DefaultFormat = `{bold}{cyan}{.File | base}{reset}:{bold}{magenta}{.Line}{reset}:` + // nolint: gochecknoglobals
-	`{bold}{blue | bright}{.Function}(){reset}: {.Message}`
+var DefaultFormat = `{bold}{cyan}{.FileBase}{reset}:{bold}{magenta}{.Line}{reset}:` + // nolint: gochecknoglobals
+	`{bold}{blue | bright}{.FunctionBase}(){reset}: {.Message}`
 
 // RuntimeError defines a runtime error with message string formatted using
 // "replacement fields" surrounded by curly braces {} format strings from
@@ -83,8 +83,18 @@ func (r *RuntimeError) File() string {
 	return r.file
 }
 
+// FileBase returns file base path.
+func (r *RuntimeError) FileBase() string {
+	return filepath.Base(r.file)
+}
+
 // Function returns function name.
 func (r *RuntimeError) Function() string {
+	return r.function
+}
+
+// FunctionBase returns function base name.
+func (r *RuntimeError) FunctionBase() string {
 	return filepath.Ext(r.function)[1:]
 }
 

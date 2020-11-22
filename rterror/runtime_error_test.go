@@ -39,7 +39,7 @@ func ExampleRuntimeError_withArguments() {
 }
 
 func ExampleRuntimeError_setFormat() {
-	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.Package | base}.{.Function}: '{.Message}'")
+	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.Package | base}.{.FunctionBase}: '{.Message}'")
 
 	fmt.Println(err)
 	// Output: #rterror_test.ExampleRuntimeError_setFormat: 'Error message bar - 5'
@@ -85,7 +85,11 @@ func TestRuntimeFile(test *testing.T) {
 }
 
 func TestRuntimeFunction(test *testing.T) {
-	assert.Equal(test, "TestRuntimeFunction", rterror.New("Error message").Function())
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.TestRuntimeFunction", rterror.New("Error message").Function())
+}
+
+func TestRuntimeFunctionBase(test *testing.T) {
+	assert.Equal(test, "TestRuntimeFunctionBase", rterror.New("Error message").FunctionBase())
 }
 
 func TestRuntimePackage(test *testing.T) {
