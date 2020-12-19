@@ -8,15 +8,15 @@ the [Go Formatter](https://gitlab.com/tymonx/go-formatter) library.
 
 ## Features
 
-*   Format string by providing arguments without using placeholders or format verbs `%`
-*   Format string using automatic placeholder `{p}`
-*   Format string using positional placeholders `{pN}`
-*   Format string using named placeholders `{name}`
-*   Format string using object placeholders `{.Field}`, `{p.Field}` and `{pN.Field}` where `Field` is an exported `struct` field or method
-*   Set custom format error message string. Default is `{.FileBase}:{.Line}:{.FunctionBase}(): {.String}`
-*   Error message contains file path, line number, function name from where was called
-*   Compatible with the standard `errors` package with `As`, `Is` and `Unwrap` functions
-*   It uses the [Go Formatter](https://gitlab.com/tymonx/go-formatter) library
+* Format string by providing arguments without using placeholders or format verbs `%`
+* Format string using automatic placeholder `{p}`
+* Format string using positional placeholders `{pN}`
+* Format string using named placeholders `{name}`
+* Format string using object placeholders `{.Field}`, `{p.Field}` and `{pN.Field}` where `Field` is an exported `struct` field or method
+* Set custom format error message string. Default is `{.FileBase}:{.Line}:{.FunctionBase}(): {.String}`
+* Error message contains file path, line number, function name from where was called
+* Compatible with the standard `errors` package with `As`, `Is` and `Unwrap` functions
+* It uses the [Go Formatter](https://gitlab.com/tymonx/go-formatter) library
 
 ## Usage
 
