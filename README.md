@@ -93,7 +93,7 @@ type MyError struct {
 
 func New(message string, arguments ...interface{}) *MyError {
     return &MyError{
-        RuntimeError: *rterror.NewSkipCaller(1, message, arguments...),
+        RuntimeError: *rterror.NewSkipCaller(rterror.SkipCall, message, arguments...),
     }
 }
 
