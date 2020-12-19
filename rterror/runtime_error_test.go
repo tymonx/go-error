@@ -78,15 +78,15 @@ func TestRuntimeError(test *testing.T) {
 }
 
 func TestRuntimeLine(test *testing.T) {
-	assert.NotZero(test, rterror.New("Error message").Line)
+	assert.NotZero(test, rterror.New("Error message").Line())
 }
 
 func TestRuntimeFile(test *testing.T) {
-	assert.Contains(test, rterror.New("Error message").File, "go-error/rterror/runtime_error_test.go")
+	assert.Contains(test, rterror.New("Error message").File(), "go-error/rterror/runtime_error_test.go")
 }
 
 func TestRuntimeFunction(test *testing.T) {
-	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.TestRuntimeFunction", rterror.New("Error message").Function)
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.TestRuntimeFunction", rterror.New("Error message").Function())
 }
 
 func TestRuntimeFunctionBase(test *testing.T) {
@@ -100,7 +100,7 @@ func TestRuntimePackage(test *testing.T) {
 func TestRuntimeArguments(test *testing.T) {
 	want := []interface{}{"5", 3, true, nil, 4.5}
 
-	assert.Equal(test, want, rterror.New("Error message", want...).Arguments)
+	assert.Equal(test, want, rterror.New("Error message", want...).Arguments())
 }
 
 func TestRuntimeSetFormat(test *testing.T) {
@@ -147,7 +147,7 @@ func TestRuntimeErrorFailback(test *testing.T) {
 func TestRuntimeArgumets(test *testing.T) {
 	err := rterror.New("error", 3, "test", 0.3, true)
 
-	assert.Len(test, err.Arguments, 4)
+	assert.Len(test, err.Arguments(), 4)
 }
 
 func TestRuntimeMarshalJSON(test *testing.T) {
@@ -159,12 +159,11 @@ func TestRuntimeMarshalJSON(test *testing.T) {
 	assert.NotEmpty(test, data)
 }
 
-func TestRuntimeUnmarshalJSON(test *testing.T) {
-	e := rterror.New("test", 4, nil, 3)
+func TestRuntimeMarshalText(test *testing.T) {
+	e := rterror.New("error", 5, nil)
 
-	assert.NoError(test, json.Unmarshal([]byte(`{"file": "main.go", "line": 3, "message": "error"}`), e))
-	assert.Equal(test, "main.go", e.File)
-	assert.Equal(test, 3, e.Line)
-	assert.Equal(test, "error", e.Message)
-	assert.Equal(test, "error 4 <nil> 3", e.String())
+	data, err := e.MarshalText()
+
+	assert.NoError(test, err)
+	assert.NotEmpty(test, data)
 }

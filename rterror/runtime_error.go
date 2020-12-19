@@ -15,6 +15,7 @@
 package rterror
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -36,13 +37,11 @@ var DefaultFormat = `{bold}{cyan}{.FileBase}{reset}:{bold}{magenta}{.Line}{reset
 // the Go Formatter library. It contains line number, file path and function name
 // from where a runtime error was called.
 type RuntimeError struct {
-	Line      int           `json:"line"`
-	File      string        `json:"file"`
-	Function  string        `json:"function"`
-	Message   string        `json:"message"`
-	Arguments []interface{} `json:"arguments"`
-	format    string
-	formatter *formatter.Formatter
+	pc         [1]uintptr
+	_message   string
+	format     string
+	formatter  *formatter.Formatter
+	_arguments []interface{}
 }
 
 // New creates a new runtime error object with message string formatted using
@@ -59,33 +58,68 @@ func New(message string, arguments ...interface{}) *RuntimeError {
 // with 0 identifying the caller of NewSkipCaller.
 func NewSkipCaller(skip int, message string, arguments ...interface{}) *RuntimeError {
 	r := &RuntimeError{
-		format:    DefaultFormat,
-		formatter: formatter.New(),
-		Message:   message,
-		Arguments: arguments,
+		format:     DefaultFormat,
+		formatter:  formatter.New(),
+		_message:   message,
+		_arguments: arguments,
 	}
 
-	var pc uintptr
-
-	pc, r.File, r.Line, _ = runtime.Caller(skip + SkipCall)
-	r.Function = runtime.FuncForPC(pc).Name()
+	runtime.Callers(skip+2*SkipCall, r.pc[:])
 
 	return r
 }
 
+// Message returns unformatted error message.
+func (r *RuntimeError) Message() string {
+	return r._message
+}
+
+// Arguments returns error arguments.
+func (r *RuntimeError) Arguments() []interface{} {
+	return r._arguments
+}
+
+// Line returns line number.
+func (r *RuntimeError) Line() (value int) {
+	if function := runtime.FuncForPC(r.pc[0]); function != nil {
+		_, value = function.FileLine(r.pc[0])
+	}
+
+	return value
+}
+
+// File returns file absolute path.
+func (r *RuntimeError) File() (name string) {
+	if function := runtime.FuncForPC(r.pc[0]); function != nil {
+		name, _ = function.FileLine(r.pc[0])
+	}
+
+	return name
+}
+
 // FileBase returns file base path.
 func (r *RuntimeError) FileBase() string {
-	return filepath.Base(r.File)
+	return filepath.Base(r.File())
+}
+
+// Function returns function full name.
+func (r *RuntimeError) Function() (name string) {
+	if function := runtime.FuncForPC(r.pc[0]); function != nil {
+		name = function.Name()
+	}
+
+	return name
 }
 
 // FunctionBase returns function base name.
 func (r *RuntimeError) FunctionBase() string {
-	return strings.TrimPrefix(filepath.Ext(r.Function), ".")
+	return strings.TrimPrefix(filepath.Ext(r.Function()), ".")
 }
 
 // Package returns full package path.
 func (r *RuntimeError) Package() string {
-	return strings.TrimSuffix(r.Function, filepath.Ext(r.Function))
+	function := r.Function()
+	return strings.TrimSuffix(function, filepath.Ext(function))
 }
 
 // SetFormat sets error message format string for formatter.
@@ -118,14 +152,30 @@ func (r *RuntimeError) GetFormatter() *formatter.Formatter {
 
 // String returns formatted error message string.
 func (r *RuntimeError) String() string {
-	formatted, err := r.formatter.Format(r.Message, r.Arguments...)
+	formatted, err := r.formatter.Format(r._message, r._arguments...)
 
 	if err != nil {
 		// Failback
-		formatted = r.Message
+		formatted = r._message
 	}
 
 	return formatted
+}
+
+// MarshalText encodes runtime error to text.
+func (r *RuntimeError) MarshalText() ([]byte, error) {
+	return []byte(r.String()), nil
+}
+
+// MarshalJSON encodes runtime error to JSON.
+func (r *RuntimeError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&marshal{
+		Line:      r.Line(),
+		File:      r.File(),
+		Function:  r.Function(),
+		Message:   r._message,
+		Arguments: r._arguments,
+	})
 }
 
 // Error returns formatted error message string.
@@ -134,7 +184,7 @@ func (r *RuntimeError) Error() string {
 
 	if err != nil {
 		// Failback
-		formatted = r.Message
+		formatted = r._message
 	}
 
 	return formatted
@@ -142,7 +192,7 @@ func (r *RuntimeError) Error() string {
 
 // Unwrap returns wrapped error.
 func (r *RuntimeError) Unwrap() error {
-	for _, argument := range r.Arguments {
+	for _, argument := range r._arguments {
 		if err, ok := argument.(error); ok {
 			return err
 		}
