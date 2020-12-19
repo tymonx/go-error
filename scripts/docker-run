@@ -15,11 +15,20 @@
 # limitations under the License.
 
 # Exit on error
-set -eo pipefail
+set -e
 
 # First capture all command line arguments to a separate variable.
 # This will allow to preserve command invocation from unwanted behavior
-DOCKER_ARGUMENTS=$@
+DOCKER_ARGUMENTS="$*"
+
+if [ -z "${GOPATH:-}" ]; then
+    if command -v go >/dev/null 2>&1; then
+        GOPATH="$(go env GOPATH)"
+    fi
+fi
+
+TMPDIR="${TMPDIR:-/tmp}"
+GOPATH="${GOPATH:-"${TMPDIR}"/go}"
 
 # Create a temporary directory for all downloaded Go modules. To have
 # the correct file mode permissions with proper user and group,
@@ -27,7 +36,7 @@ DOCKER_ARGUMENTS=$@
 # with the --volume argument. Otherwise, docker will create directory
 # for us with directory properties from container. Mostly of time it is
 # unwanted root:root
-mkdir -p /tmp/go/
+mkdir -p "${TMPDIR}" "${GOPATH}"
 
 # Run Docker image as container. Mount current working directory to container.
 # This will allow all commands from Docker to have access to files and
@@ -40,12 +49,12 @@ docker run \
     --interactive \
     --user "$(id -u):$(id -g)" \
     --volume "$(pwd):$(pwd)" \
-    --volume "/tmp/:/tmp/" \
-    --volume "/tmp/go/:/go/" \
+    --volume "${TMPDIR}:/tmp/" \
+    --volume "${GOPATH}:/go/" \
     --volume "/etc/group:/etc/group:ro" \
     --volume "/etc/passwd:/etc/passwd:ro" \
     --security-opt=label=disable \
     --workdir "$(pwd)" \
     --entrypoint /bin/bash \
-    "registry.gitlab.com/tymonx/docker-go:1.14.3" \
-    ${DOCKER_ARGUMENTS:+-c "$DOCKER_ARGUMENTS"}
+    "registry.gitlab.com/tymonx/docker-go:1.15.5" \
+    ${DOCKER_ARGUMENTS:+-c "${DOCKER_ARGUMENTS}"}

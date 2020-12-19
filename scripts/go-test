@@ -15,10 +15,10 @@
 # limitations under the License.
 
 # Exit on error
-set -eo pipefail
+set -e
 
 # Get current directory location for this script in portable and safe way
 SCRIPT_DIR="$(cd -P -- "$(dirname -- "$(command -v -- "$0")")" >/dev/null 2>&1 && pwd -P)"
 
 # Run docker
-$SCRIPT_DIR/docker-run $(basename "$0") $@
+"${SCRIPT_DIR}"/docker-run "$(basename "$0")" ${@:+$@}
