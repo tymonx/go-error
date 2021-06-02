@@ -167,3 +167,7 @@ func TestRuntimeMarshalText(test *testing.T) {
 	assert.NoError(test, err)
 	assert.NotEmpty(test, data)
 }
+
+func TestRuntimeErrorWrap(test *testing.T) {
+	assert.NotNil(test, rterror.New("error").Wrap(rterror.New("wrap")).Unwrap())
+}

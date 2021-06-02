@@ -42,6 +42,7 @@ type RuntimeError struct {
 	format     string
 	formatter  *formatter.Formatter
 	_arguments []interface{}
+	err        error
 }
 
 // New creates a new runtime error object with message string formatted using
@@ -190,8 +191,18 @@ func (r *RuntimeError) Error() string {
 	return formatted
 }
 
+// Wrap wraps provided error into runtime error.
+func (r *RuntimeError) Wrap(err error) *RuntimeError {
+	r.err = err
+	return r
+}
+
 // Unwrap returns wrapped error.
 func (r *RuntimeError) Unwrap() error {
+	if r.err != nil {
+		return r.err
+	}
+
 	for _, argument := range r._arguments {
 		if err, ok := argument.(error); ok {
 			return err
