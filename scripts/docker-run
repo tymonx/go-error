@@ -50,7 +50,8 @@ docker run \
     --user "$(id -u):$(id -g)" \
     --volume "$(pwd):$(pwd)" \
     --volume "${TMPDIR}:/tmp/" \
-    --volume "${GOPATH}:/go/" \
+    --volume "${GOPATH}/src:/go/src" \
+    --volume "${GOPATH}/pkg/mod:/go/pkg/mod" \
     --volume "/etc/group:/etc/group:ro" \
     --volume "/etc/passwd:/etc/passwd:ro" \
     --security-opt=label=disable \
