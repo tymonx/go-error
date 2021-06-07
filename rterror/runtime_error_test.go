@@ -57,7 +57,7 @@ func ExampleRuntimeError_unwrap() {
 	// Output:
 	// true
 	// runtime_error_test.go:53:ExampleRuntimeError_unwrap(): Error message 5
-	//  `- wrapped error
+	// `--wrapped error
 }
 
 func ExampleNewSkipCaller() {

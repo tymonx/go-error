@@ -28,8 +28,11 @@ import (
 // These constants define default values for runtime error.
 const (
 	SkipCall      = 1
+	DefaultIndent = "`--"
 	DefaultFormat = `{bold}{cyan}{.FileBase}{reset}:{bold}{magenta}{.Line}{reset}:` +
 		`{bold}{blue | bright}{.FunctionBase}(){reset}: {.String}`
+
+	indentSize = len(DefaultIndent)
 )
 
 // RuntimeError defines a runtime error with message string formatted using
@@ -179,25 +182,22 @@ func (r *RuntimeError) Error() (result string) {
 			message = err.Error()
 		}
 
-		builder.Grow(len(message) + 5 + level)
+		indent := indentSize * level
+
+		builder.Grow(1 + indent + indentSize + len(message))
 
 		// It generates:
-		//  |-
-		//  |--
-		//  `---
-		fmt.Fprint(&builder, "\n ")
+		// <error>
+		// `--<error>
+		//    `--<error>
+		//       `--<error>
+		fmt.Fprint(&builder, "\n")
 
-		if errors.Unwrap(err) != nil {
-			fmt.Fprint(&builder, "|") // next
-		} else {
-			fmt.Fprint(&builder, "`") // end
+		for i := 0; i < indent; i++ {
+			fmt.Fprint(&builder, " ") // indention
 		}
 
-		for i := 0; i <= level; i++ {
-			fmt.Fprint(&builder, "-") // idention
-		}
-
-		fmt.Fprint(&builder, " ", message)
+		fmt.Fprint(&builder, DefaultIndent, message)
 	}
 
 	return builder.String()
