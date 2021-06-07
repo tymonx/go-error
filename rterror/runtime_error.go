@@ -16,6 +16,8 @@ package rterror
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -25,12 +27,10 @@ import (
 
 // These constants define default values for runtime error.
 const (
-	SkipCall = 1
+	SkipCall      = 1
+	DefaultFormat = `{bold}{cyan}{.FileBase}{reset}:{bold}{magenta}{.Line}{reset}:` +
+		`{bold}{blue | bright}{.FunctionBase}(){reset}: {.String}`
 )
-
-// DefaultFormat defines default error message format.
-var DefaultFormat = `{bold}{cyan}{.FileBase}{reset}:{bold}{magenta}{.Line}{reset}:` + // nolint: gochecknoglobals
-	`{bold}{blue | bright}{.FunctionBase}(){reset}: {.String}`
 
 // RuntimeError defines a runtime error with message string formatted using
 // "replacement fields" surrounded by curly braces {} format strings from
@@ -65,7 +65,7 @@ func NewSkipCaller(skip int, message string, arguments ...interface{}) *RuntimeE
 		_arguments: arguments,
 	}
 
-	runtime.Callers(skip+2*SkipCall, r.pc[:])
+	runtime.Callers((SkipCall + SkipCall + skip), r.pc[:])
 
 	return r
 }
@@ -82,20 +82,12 @@ func (r *RuntimeError) Arguments() []interface{} {
 
 // Line returns line number.
 func (r *RuntimeError) Line() (value int) {
-	if function := runtime.FuncForPC(r.pc[0]); function != nil {
-		_, value = function.FileLine(r.pc[0])
-	}
-
-	return value
+	return r.frame().Line
 }
 
 // File returns file absolute path.
 func (r *RuntimeError) File() (name string) {
-	if function := runtime.FuncForPC(r.pc[0]); function != nil {
-		name, _ = function.FileLine(r.pc[0])
-	}
-
-	return name
+	return r.frame().File
 }
 
 // FileBase returns file base path.
@@ -105,11 +97,7 @@ func (r *RuntimeError) FileBase() string {
 
 // Function returns function full name.
 func (r *RuntimeError) Function() (name string) {
-	if function := runtime.FuncForPC(r.pc[0]); function != nil {
-		name = function.Name()
-	}
-
-	return name
+	return r.frame().Function
 }
 
 // FunctionBase returns function base name.
@@ -153,14 +141,11 @@ func (r *RuntimeError) GetFormatter() *formatter.Formatter {
 
 // String returns formatted error message string.
 func (r *RuntimeError) String() string {
-	formatted, err := r.formatter.Format(r._message, r._arguments...)
-
-	if err != nil {
-		// Failback
-		formatted = r._message
+	if formatted, err := r.formatter.Format(r._message, r._arguments...); err == nil {
+		return formatted
 	}
 
-	return formatted
+	return r._message // Failback
 }
 
 // MarshalText encodes runtime error to text.
@@ -180,15 +165,42 @@ func (r *RuntimeError) MarshalJSON() ([]byte, error) {
 }
 
 // Error returns formatted error message string.
-func (r *RuntimeError) Error() string {
-	formatted, err := formatter.Format(r.format, r)
+func (r *RuntimeError) Error() (result string) {
+	var builder strings.Builder
 
-	if err != nil {
-		// Failback
-		formatted = r._message
+	fmt.Fprint(&builder, r._error())
+
+	for level, err := 0, r.err; err != nil; level, err = (level + 1), errors.Unwrap(err) {
+		var message string
+
+		if e, ok := err.(*RuntimeError); ok {
+			message = e._error()
+		} else {
+			message = err.Error()
+		}
+
+		builder.Grow(len(message) + 5 + level)
+
+		// It generates:
+		//  |-
+		//  |--
+		//  `---
+		fmt.Fprint(&builder, "\n ")
+
+		if errors.Unwrap(err) != nil {
+			fmt.Fprint(&builder, "|") // next
+		} else {
+			fmt.Fprint(&builder, "`") // end
+		}
+
+		for i := 0; i <= level; i++ {
+			fmt.Fprint(&builder, "-") // idention
+		}
+
+		fmt.Fprint(&builder, " ", message)
 	}
 
-	return formatted
+	return builder.String()
 }
 
 // Wrap wraps provided error into runtime error.
@@ -199,15 +211,18 @@ func (r *RuntimeError) Wrap(err error) *RuntimeError {
 
 // Unwrap returns wrapped error.
 func (r *RuntimeError) Unwrap() error {
-	if r.err != nil {
-		return r.err
+	return r.err
+}
+
+func (r *RuntimeError) frame() *runtime.Frame {
+	frame, _ := runtime.CallersFrames(r.pc[:]).Next()
+	return &frame
+}
+
+func (r *RuntimeError) _error() string {
+	if formatted, err := formatter.Format(r.format, r); err == nil {
+		return formatted
 	}
 
-	for _, argument := range r._arguments {
-		if err, ok := argument.(error); ok {
-			return err
-		}
-	}
-
-	return nil
+	return r._message // Failback
 }

@@ -23,7 +23,7 @@ import (
 )
 
 func TestIsTemporaryTrue(test *testing.T) {
-	assert.True(test, rterror.IsTemporary(rterror.New("temporary", syscall.EAGAIN)))
+	assert.True(test, rterror.IsTemporary(rterror.New("temporary").Wrap(syscall.EAGAIN)))
 }
 
 func TestIsTemporaryFalse(test *testing.T) {
@@ -31,7 +31,7 @@ func TestIsTemporaryFalse(test *testing.T) {
 }
 
 func TestIsTimeoutTrue(test *testing.T) {
-	assert.True(test, rterror.IsTimeout(rterror.New("timeout", syscall.ETIMEDOUT)))
+	assert.True(test, rterror.IsTimeout(rterror.New("timeout").Wrap(syscall.ETIMEDOUT)))
 }
 
 func TestIsTimeoutFalse(test *testing.T) {
