@@ -20,6 +20,22 @@ import (
 	"gitlab.com/tymonx/go-error/rterror"
 )
 
+func error1() error {
+	return rterror.New("my error message 1").Wrap(error2())
+}
+
+func error2() error {
+	return rterror.New("my error message 2").Wrap(error3())
+}
+
+func error3() error {
+	return rterror.New("my error message 3").Wrap(error4())
+}
+
+func error4() error {
+	return rterror.New("my error message 4")
+}
+
 func main() {
-	fmt.Println(rterror.New("my error message"))
+	fmt.Println(error1())
 }

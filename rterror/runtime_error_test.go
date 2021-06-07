@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,14 +30,14 @@ func ExampleRuntimeError_withoutArguments() {
 	err := rterror.New("Error message")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:29:ExampleRuntimeError_withoutArguments(): Error message
+	// Output: runtime_error_test.go:30:ExampleRuntimeError_withoutArguments(): Error message
 }
 
 func ExampleRuntimeError_withArguments() {
 	err := rterror.New("Error message {p1} - {p0}", 3, "foo")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:36:ExampleRuntimeError_withArguments(): Error message foo - 3
+	// Output: runtime_error_test.go:37:ExampleRuntimeError_withArguments(): Error message foo - 3
 }
 
 func ExampleRuntimeError_setFormat() {
@@ -49,13 +50,14 @@ func ExampleRuntimeError_setFormat() {
 func ExampleRuntimeError_unwrap() {
 	wrapped := rterror.New("wrapped error").SetFormat("{.Message}")
 
-	err := rterror.New("Error message", 5, wrapped)
+	err := rterror.New("Error message", 5).Wrap(wrapped)
 
 	fmt.Println(errors.Is(err, wrapped))
 	fmt.Println(err)
 	// Output:
 	// true
-	// runtime_error_test.go:52:ExampleRuntimeError_unwrap(): Error message 5 wrapped error
+	// runtime_error_test.go:53:ExampleRuntimeError_unwrap(): Error message 5
+	//  `- wrapped error
 }
 
 func ExampleNewSkipCaller() {
@@ -66,7 +68,7 @@ func ExampleNewSkipCaller() {
 	err := MyNewError("Error message {p1}", "caller", "skip")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:66:ExampleNewSkipCaller(): Error message skip caller
+	// Output: runtime_error_test.go:68:ExampleNewSkipCaller(): Error message skip caller
 }
 
 func TestRuntimeError(test *testing.T) {
@@ -74,7 +76,7 @@ func TestRuntimeError(test *testing.T) {
 
 	assert.NotNil(test, err)
 	assert.Error(test, err)
-	assert.Equal(test, "runtime_error_test.go:73:TestRuntimeError(): Error message 5", err.Error())
+	assert.Equal(test, "runtime_error_test.go:75:TestRuntimeError(): Error message 5", err.Error())
 }
 
 func TestRuntimeLine(test *testing.T) {
@@ -125,7 +127,7 @@ func TestRuntimeGetFormatter(test *testing.T) {
 func TestRuntimeUnwrap(test *testing.T) {
 	err := rterror.New("error")
 
-	assert.Equal(test, err, rterror.New("Error message", 5, err, 3).Unwrap())
+	assert.Equal(test, err, rterror.New("Error message", 5, 3).Wrap(err).Unwrap())
 }
 
 func TestRuntimeUnwrapNil(test *testing.T) {
@@ -170,4 +172,8 @@ func TestRuntimeMarshalText(test *testing.T) {
 
 func TestRuntimeErrorWrap(test *testing.T) {
 	assert.NotNil(test, rterror.New("error").Wrap(rterror.New("wrap")).Unwrap())
+}
+
+func TestRuntimeErrorNestedWrap(test *testing.T) {
+	assert.NotEmpty(test, rterror.New("A").Wrap(rterror.New("B").Wrap(rterror.New("C").Wrap(syscall.EAGAIN))).Error())
 }

@@ -59,7 +59,7 @@ Output:
 ```go
 wrapped := rterror.New("Wrapped error")
 
-err := rterror.New("Error message {p1} -", 3, err, "bar")
+err := rterror.New("Error message {p1} -", 3, "bar").Wrap(wrapped)
 
 fmt.Println(errors.Is(err, wrapped))
 ```
