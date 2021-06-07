@@ -30,14 +30,14 @@ func ExampleRuntimeError_withoutArguments() {
 	err := rterror.New("Error message")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:30:ExampleRuntimeError_withoutArguments(): Error message
+	// Output: gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:30:ExampleRuntimeError_withoutArguments(): Error message
 }
 
 func ExampleRuntimeError_withArguments() {
 	err := rterror.New("Error message {p1} - {p0}", 3, "foo")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:37:ExampleRuntimeError_withArguments(): Error message foo - 3
+	// Output: gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:37:ExampleRuntimeError_withArguments(): Error message foo - 3
 }
 
 func ExampleRuntimeError_setFormat() {
@@ -56,7 +56,7 @@ func ExampleRuntimeError_unwrap() {
 	fmt.Println(err)
 	// Output:
 	// true
-	// runtime_error_test.go:53:ExampleRuntimeError_unwrap(): Error message 5
+	// gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:53:ExampleRuntimeError_unwrap(): Error message 5
 	// `--wrapped error
 }
 
@@ -68,7 +68,7 @@ func ExampleNewSkipCaller() {
 	err := MyNewError("Error message {p1}", "caller", "skip")
 
 	fmt.Println(err)
-	// Output: runtime_error_test.go:68:ExampleNewSkipCaller(): Error message skip caller
+	// Output: gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:68:ExampleNewSkipCaller(): Error message skip caller
 }
 
 func TestRuntimeError(test *testing.T) {
@@ -76,7 +76,7 @@ func TestRuntimeError(test *testing.T) {
 
 	assert.NotNil(test, err)
 	assert.Error(test, err)
-	assert.Equal(test, "runtime_error_test.go:75:TestRuntimeError(): Error message 5", err.Error())
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:75:TestRuntimeError(): Error message 5", err.Error())
 }
 
 func TestRuntimeLine(test *testing.T) {

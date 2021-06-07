@@ -29,7 +29,7 @@ import (
 const (
 	SkipCall      = 1
 	DefaultIndent = "`--"
-	DefaultFormat = `{bold}{cyan}{.FileBase}{reset}:{bold}{magenta}{.Line}{reset}:` +
+	DefaultFormat = `{cyan | bright}{.Package}{reset}:{bold}{cyan}{.FileBase}{reset}:{bold}{magenta}{.Line}{reset}:` +
 		`{bold}{blue | bright}{.FunctionBase}(){reset}: {.String}`
 
 	indentSize = len(DefaultIndent)
