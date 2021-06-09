@@ -84,12 +84,12 @@ func (r *RuntimeError) Arguments() []interface{} {
 }
 
 // Line returns line number.
-func (r *RuntimeError) Line() (value int) {
+func (r *RuntimeError) Line() int {
 	return r.frame().Line
 }
 
 // File returns file absolute path.
-func (r *RuntimeError) File() (name string) {
+func (r *RuntimeError) File() string {
 	return r.frame().File
 }
 
@@ -99,19 +99,42 @@ func (r *RuntimeError) FileBase() string {
 }
 
 // Function returns function full name.
-func (r *RuntimeError) Function() (name string) {
+func (r *RuntimeError) Function() string {
 	return r.frame().Function
 }
 
 // FunctionBase returns function base name.
 func (r *RuntimeError) FunctionBase() string {
-	return strings.TrimPrefix(filepath.Ext(r.Function()), ".")
+	function := r.Function()
+
+	if index := strings.LastIndexByte(function, '/'); index != -1 {
+		function = function[index+1:]
+	}
+
+	if index := strings.IndexByte(function, '.'); index != -1 {
+		function = function[index+1:]
+	}
+
+	return function
 }
 
 // Package returns full package path.
 func (r *RuntimeError) Package() string {
-	function := r.Function()
-	return strings.TrimSuffix(function, filepath.Ext(function))
+	_package := r.Function()
+	function := r.FunctionBase()
+
+	return _package[:len(_package)-len(function)-1]
+}
+
+// PackageBase returns package name.
+func (r *RuntimeError) PackageBase() string {
+	_package := r.Package()
+
+	if index := strings.LastIndexByte(_package, '/'); index != -1 {
+		_package = _package[index+1:]
+	}
+
+	return _package
 }
 
 // SetFormat sets error message format string for formatter.
@@ -168,16 +191,23 @@ func (r *RuntimeError) MarshalJSON() ([]byte, error) {
 }
 
 // Error returns formatted error message string.
+//
+// With wrapped errors it returns:
+//
+//  <error>
+//  `--<error>
+//     `--<error>
+//        `--<error>
 func (r *RuntimeError) Error() (result string) {
 	var builder strings.Builder
 
-	fmt.Fprint(&builder, r._error())
+	fmt.Fprint(&builder, r.TopError())
 
 	for level, err := 0, r.err; err != nil; level, err = (level + 1), errors.Unwrap(err) {
 		var message string
 
 		if e, ok := err.(*RuntimeError); ok {
-			message = e._error()
+			message = e.TopError()
 		} else {
 			message = err.Error()
 		}
@@ -186,12 +216,7 @@ func (r *RuntimeError) Error() (result string) {
 
 		builder.Grow(1 + indent + indentSize + len(message))
 
-		// It generates:
-		// <error>
-		// `--<error>
-		//    `--<error>
-		//       `--<error>
-		fmt.Fprint(&builder, "\n")
+		fmt.Fprintln(&builder)
 
 		for i := 0; i < indent; i++ {
 			fmt.Fprint(&builder, " ") // indention
@@ -201,6 +226,19 @@ func (r *RuntimeError) Error() (result string) {
 	}
 
 	return builder.String()
+}
+
+// TopError returns top error message without any wrapped error messages.
+//
+// With wrapped errors it simple returns:
+//
+//  <error>
+func (r *RuntimeError) TopError() string {
+	if formatted, err := formatter.Format(r.format, r); err == nil {
+		return formatted
+	}
+
+	return r._message // Failback
 }
 
 // Wrap wraps provided error into runtime error.
@@ -217,12 +255,4 @@ func (r *RuntimeError) Unwrap() error {
 func (r *RuntimeError) frame() *runtime.Frame {
 	frame, _ := runtime.CallersFrames(r.pc[:]).Next()
 	return &frame
-}
-
-func (r *RuntimeError) _error() string {
-	if formatted, err := formatter.Format(r.format, r); err == nil {
-		return formatted
-	}
-
-	return r._message // Failback
 }
