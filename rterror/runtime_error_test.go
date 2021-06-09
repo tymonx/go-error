@@ -16,8 +16,6 @@ package rterror_test
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"syscall"
 	"testing"
 
@@ -26,115 +24,70 @@ import (
 	"gitlab.com/tymonx/go-formatter/formatter"
 )
 
-func ExampleRuntimeError_withoutArguments() {
-	err := rterror.New("Error message")
-
-	fmt.Println(err)
-	// Output: gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:30:ExampleRuntimeError_withoutArguments(): Error message
-}
-
-func ExampleRuntimeError_withArguments() {
-	err := rterror.New("Error message {p1} - {p0}", 3, "foo")
-
-	fmt.Println(err)
-	// Output: gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:37:ExampleRuntimeError_withArguments(): Error message foo - 3
-}
-
-func ExampleRuntimeError_setFormat() {
-	err := rterror.New("Error message {p1} - {p0}", 5, "bar").SetFormat("#{.Package | base}.{.FunctionBase}: '{.String}'")
-
-	fmt.Println(err)
-	// Output: #rterror_test.ExampleRuntimeError_setFormat: 'Error message bar - 5'
-}
-
-func ExampleRuntimeError_unwrap() {
-	wrapped := rterror.New("wrapped error").SetFormat("{.Message}")
-
-	err := rterror.New("Error message", 5).Wrap(wrapped)
-
-	fmt.Println(errors.Is(err, wrapped))
-	fmt.Println(err)
-	// Output:
-	// true
-	// gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:53:ExampleRuntimeError_unwrap(): Error message 5
-	// `--wrapped error
-}
-
-func ExampleNewSkipCaller() {
-	MyNewError := func(message string, arguments ...interface{}) *rterror.RuntimeError {
-		return rterror.NewSkipCaller(1, message, arguments...)
-	}
-
-	err := MyNewError("Error message {p1}", "caller", "skip")
-
-	fmt.Println(err)
-	// Output: gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:68:ExampleNewSkipCaller(): Error message skip caller
-}
-
 func TestRuntimeError(test *testing.T) {
 	err := rterror.New("Error message", 5)
 
 	assert.NotNil(test, err)
 	assert.Error(test, err)
-	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:75:TestRuntimeError(): Error message 5", err.Error())
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test:runtime_error_test.go:28:TestRuntimeError(): Error message 5", err.Error())
 }
 
-func TestRuntimeLine(test *testing.T) {
+func TestRuntimeErrorLine(test *testing.T) {
 	assert.NotZero(test, rterror.New("Error message").Line())
 }
 
-func TestRuntimeFile(test *testing.T) {
+func TestRuntimeErrorFile(test *testing.T) {
 	assert.Contains(test, rterror.New("Error message").File(), "go-error/rterror/runtime_error_test.go")
 }
 
-func TestRuntimeFunction(test *testing.T) {
-	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.TestRuntimeFunction", rterror.New("Error message").Function())
+func TestRuntimeErrorFunction(test *testing.T) {
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.TestRuntimeErrorFunction", rterror.New("Error message").Function())
 }
 
-func TestRuntimeFunctionBase(test *testing.T) {
-	assert.Equal(test, "TestRuntimeFunctionBase", rterror.New("Error message").FunctionBase())
+func TestRuntimeErrorFunctionBase(test *testing.T) {
+	assert.Equal(test, "TestRuntimeErrorFunctionBase", rterror.New("Error message").FunctionBase())
 }
 
-func TestRuntimePackage(test *testing.T) {
+func TestRuntimeErrorPackage(test *testing.T) {
 	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test", rterror.New("Error message").Package())
 }
 
-func TestRuntimeArguments(test *testing.T) {
+func TestRuntimeErrorArguments(test *testing.T) {
 	want := []interface{}{"5", 3, true, nil, 4.5}
 
 	assert.Equal(test, want, rterror.New("Error message", want...).Arguments())
 }
 
-func TestRuntimeSetFormat(test *testing.T) {
+func TestRuntimeErrorSetFormat(test *testing.T) {
 	assert.Equal(test, "-> Error message", rterror.New("Error message").SetFormat("-> {.Message}").Error())
 }
 
-func TestRuntimeGetFormat(test *testing.T) {
+func TestRuntimeErrorGetFormat(test *testing.T) {
 	assert.Equal(test, rterror.DefaultFormat, rterror.New("Error message").GetFormat())
 }
 
-func TestRuntimeResetFormat(test *testing.T) {
+func TestRuntimeErrorResetFormat(test *testing.T) {
 	assert.Equal(test, rterror.DefaultFormat, rterror.New("Error message").SetFormat("X").ResetFormat().GetFormat())
 }
 
-func TestRuntimeGetFormatter(test *testing.T) {
+func TestRuntimeErrorGetFormatter(test *testing.T) {
 	want := formatter.New()
 
 	assert.NotNil(test, rterror.New("").GetFormatter())
 	assert.Equal(test, want, rterror.New("").SetFormatter(want).GetFormatter())
 }
 
-func TestRuntimeUnwrap(test *testing.T) {
+func TestRuntimeErrorUnwrap(test *testing.T) {
 	err := rterror.New("error")
 
 	assert.Equal(test, err, rterror.New("Error message", 5, 3).Wrap(err).Unwrap())
 }
 
-func TestRuntimeUnwrapNil(test *testing.T) {
+func TestRuntimeErrorUnwrapNil(test *testing.T) {
 	assert.Nil(test, rterror.New("Error message").Unwrap())
 }
 
-func TestRuntimeMessageFailback(test *testing.T) {
+func TestRuntimeErrorMessageFailback(test *testing.T) {
 	want := "Error message {invalid}"
 
 	assert.Equal(test, want, rterror.New(want, 3, "foo").String())
@@ -146,13 +99,13 @@ func TestRuntimeErrorFailback(test *testing.T) {
 	assert.Equal(test, want, rterror.New(want, 3, "foo").SetFormat("{invalid}").Error())
 }
 
-func TestRuntimeArgumets(test *testing.T) {
+func TestRuntimeErrorArgumets(test *testing.T) {
 	err := rterror.New("error", 3, "test", 0.3, true)
 
 	assert.Len(test, err.Arguments(), 4)
 }
 
-func TestRuntimeMarshalJSON(test *testing.T) {
+func TestRuntimeErrorMarshalJSON(test *testing.T) {
 	e := rterror.New("error", 4, nil)
 
 	data, err := json.Marshal(e)
@@ -161,7 +114,7 @@ func TestRuntimeMarshalJSON(test *testing.T) {
 	assert.NotEmpty(test, data)
 }
 
-func TestRuntimeMarshalText(test *testing.T) {
+func TestRuntimeErrorMarshalText(test *testing.T) {
 	e := rterror.New("error", 5, nil)
 
 	data, err := e.MarshalText()
@@ -176,4 +129,26 @@ func TestRuntimeErrorWrap(test *testing.T) {
 
 func TestRuntimeErrorNestedWrap(test *testing.T) {
 	assert.NotEmpty(test, rterror.New("A").Wrap(rterror.New("B").Wrap(rterror.New("C").Wrap(syscall.EAGAIN))).Error())
+}
+
+type Struct struct{}
+
+func (*Struct) Error() *rterror.RuntimeError {
+	return rterror.New("error")
+}
+
+func TestRuntimeErrorStructFunction(test *testing.T) {
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test.(*Struct).Error", new(Struct).Error().Function())
+}
+
+func TestRuntimeErrorStructFunctionBase(test *testing.T) {
+	assert.Equal(test, "(*Struct).Error", new(Struct).Error().FunctionBase())
+}
+
+func TestRuntimeErrorStructPackage(test *testing.T) {
+	assert.Equal(test, "gitlab.com/tymonx/go-error/rterror_test", new(Struct).Error().Package())
+}
+
+func TestRuntimeErrorStructPackageBase(test *testing.T) {
+	assert.Equal(test, "rterror_test", new(Struct).Error().PackageBase())
 }
